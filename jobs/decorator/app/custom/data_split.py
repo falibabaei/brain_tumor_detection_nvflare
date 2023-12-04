@@ -20,13 +20,26 @@ import numpy as np
 
 
 def data_split_args_parser():
-    parser = argparse.ArgumentParser(description="Generate data split for dataset")
-    parser.add_argument("--data_path", type=str, help="Path to image directory")
-    parser.add_argument("--site_num", type=int, help="Total number of sites")
-    parser.add_argument("--site_name_prefix", type=str, default="site-", help="Site name prefix")
-    #parser.add_argument("--size_total", type=int, help="Total number of instances")
+    parser = argparse.ArgumentParser(
+        description="Generate data split for dataset"
+    )
     parser.add_argument(
-        "--size_valid", type=int, help="Validation size, the first N instances to be treated as validation data"
+        "--data_path", type=str, help="Path to image directory"
+    )
+    parser.add_argument(
+        "--site_num", type=int, help="Total number of sites"
+    )
+    parser.add_argument(
+        "--site_name_prefix",
+        type=str,
+        default="site-",
+        help="Site name prefix",
+    )
+    # parser.add_argument("--size_total", type=int, help="Total number of instances")
+    parser.add_argument(
+        "--size_valid",
+        type=int,
+        help="Validation size, the first N instances to be treated as validation data",
     )
     parser.add_argument(
         "--split_method",
@@ -35,7 +48,12 @@ def data_split_args_parser():
         choices=["uniform", "linear", "square", "exponential"],
         help="How to split the dataset",
     )
-    parser.add_argument("--out_path", type=str, default="~/dataset", help="Output path for the data split json file")
+    parser.add_argument(
+        "--out_path",
+        type=str,
+        default="~/dataset",
+        help="Output path for the data split json file",
+    )
     return parser
 
 
@@ -65,31 +83,38 @@ def split_num_proportion(n, site_num, option: str):
 def main():
     parser = data_split_args_parser()
     args = parser.parse_args()
-    
+
     size_total = len(os.listdir(args.data_path))
-    
 
+    json_data = {
+        "data_path": args.data_path,
+        "data_index": {"valid": {"start": 0, "end": args.size_valid}},
+    }
 
-
-    json_data = {"data_path": args.data_path, "data_index": {"valid": {"start": 0, "end": args.size_valid}}}
-
-    site_size = split_num_proportion((size_total - args.size_valid), args.site_num, args.split_method)
+    site_size = split_num_proportion(
+        (size_total - args.size_valid),
+        args.site_num,
+        args.split_method,
+    )
 
     for site in range(args.site_num):
         site_id = args.site_name_prefix + str(site + 1)
         idx_start = args.size_valid + sum(site_size[:site])
         idx_end = args.size_valid + sum(site_size[: site + 1])
-        json_data["data_index"][site_id] = {"start": idx_start, "end": idx_end}
+        json_data["data_index"][site_id] = {
+            "start": idx_start,
+            "end": idx_end,
+        }
 
     if not os.path.exists(args.out_path):
         os.makedirs(args.out_path, exist_ok=True)
-   
+
     output_file = os.path.join(args.out_path, f"data_split.json")
     with open(output_file, "w") as f:
-            json.dump(json_data, f, indent=4)
+        json.dump(json_data, f, indent=4)
 
 
 if __name__ == "__main__":
     main()
 
- #   --data_path /home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/all_imgs --site_num 2 --site_name_prefix site --size_valid 400 --out_path /home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/
+#   --data_path /home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/all_imgs --site_num 2 --site_name_prefix site --size_valid 400 --out_path /home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/
