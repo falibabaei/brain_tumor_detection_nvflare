@@ -8,29 +8,29 @@ import nvflare.client as flare
 
 import load_data
 from net import TumorNet
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f'Using {device} device')
+PATH = "./tumor_classification.pth"
+data_split_filename='/home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/data_split.json'
+image_transform = transforms.Compose([
+        transforms.Resize(size = (256, 256)),
+        transforms.CenterCrop(size = (244, 244)),
+        transforms.ToTensor()
+    ])
+with open(data_split_filename, "r") as file:
+            data_split = json.load(file)
+ 
 
 def main():
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f'Using {device} device')
-    PATH = "./tumor_classification.pth"
-    data_split_filename='/home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/data_split.json'
-    image_transform = transforms.Compose([
-            transforms.Resize(size = (256, 256)),
-            transforms.CenterCrop(size = (244, 244)),
-            transforms.ToTensor()
-        ])
-    with open(data_split_filename, "r") as file:
-                data_split = json.load(file)
-        
+    # (2) initializes NVFlare client API
     flare.init()
-    #load data for each client
     client_id=flare.get_site_name()
-    _, train_dataloader, _, valid_dataloader =  load_data.load_data(data_split, client_id, image_transform )
-   
+    train_data, train_dataloader, valid_data, valid_dataloader =  load_data.load_data(data_split, client_id, image_transform )
+    image_datasets = {'train': train_data, 'test': valid_data}
+    image_dataloaders = {'train': train_dataloader, 'test': valid_dataloader}
     model= TumorNet()
     loss_func= nn.BCELoss()
-    # (2) initializes NVFlare client API
+    
     
     # (3) decorates with flare.train and load model from the first argument
     # wraps training logic into a method
@@ -48,11 +48,16 @@ def main():
             print('Epoch {}/{}'.format(e, epochs))
             
 
-            running_loss = 0.0  # record the training/test loss for each epoch
-            running_corrects = 0  # record the number of correct predicts by the model for each epoch
-            print("Training start")
-            for features, labels in train_dataloader:
-                    
+            for phase in ['train', 'test']:
+                if phase == 'train':
+                   model.train()  # set model to training mode for training phase
+                else:
+                  model.eval()  # set model to evaluation mode for test phase
+
+                running_loss = 0.0  # record the training/test loss for each epoch
+                running_corrects = 0  # record the number of correct predicts by the model for each epoch
+
+                for features, labels in image_dataloaders[phase]:
                     # send data to gpu if possible
                     features = features.to(device)
                     labels = labels.to(device)
@@ -62,33 +67,32 @@ def main():
 
                     # forward pass
                     # set parameters to be trainable only at training phase
-                   
-                    outcomes = model(features)
-                    pred_labels = outcomes.round()  # round up forward outcomes to get predicted labels
-                    labels = labels.unsqueeze(1).type(torch.float)
-                    loss = loss_func(outcomes, labels)  # calculate loss
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outcomes = model(features)
+                        pred_labels = outcomes.round()  # round up forward outcomes to get predicted labels
+                        labels = labels.unsqueeze(1).type(torch.float)
+                        loss = loss_func(outcomes, labels)  # calculate loss
 
                         # backpropagation only for training phase
-                    
-                    loss.backward()
-                    optimizer.step()
+                        if phase == 'train':
+                            loss.backward()
+                            optimizer.step()
 
                     # record loss and correct predicts of each bach
                     running_loss += loss.item() * features.size(0)
                     running_corrects += torch.sum(pred_labels == labels.data)
 
                 # record loss and correct predicts of each epoch and stored in history
-            epoch_loss = running_loss / len(train_dataloader)
-            epoch_acc = running_corrects.double() / len(train_dataloader)
+                epoch_loss = running_loss / len(image_datasets[phase])
+                epoch_acc = running_corrects.double() / len(image_datasets[phase])
 
-            print('Loss: {:.4f} Acc: {:.4f}'.format( epoch_loss, epoch_acc))
-        print("Finished Training")        
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+            
+        print("Training finished ")        
         torch.save(model.state_dict(), PATH)
         # (4) construct trained FL model
         output_model = flare.FLModel(params=model.cpu().state_dict())
-    
-        # (8) send model back to NVFlare
-        #flare.send(output_model)
+
         return output_model
     
     def  evaluate(input_weights):
