@@ -62,8 +62,9 @@ nvflare job create -force -j ./jobs/client_api -w sag_pt -sd ./code/     -f conf
 ```bash
 nvflare simulator -n 2 -t 2 ./my_job -w my_workspace
 ```
-`-n` shows the number of clients, `-t` number of parallel running clients, and `-w` WORKSPACE folder. 
-Results will be saved in `my_workspace`.
+- `-n` shows the number of clients,
+- `-t` number of parallel running clients, 
+- `-w` WORKSPACE folder. Results will be saved in `my_workspace`.
  
 ## Project Structure
 ```
