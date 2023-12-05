@@ -166,15 +166,15 @@ def main(batch_sz, epochs, lr):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Your script description here")
+    parser = argparse.ArgumentParser(description="Train a model for brain tumor detection using nvflare.")
 
-    # Add an argument for batch_sz
+ 
     parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
     parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
     parser.add_argument("--lr", type=float, default=None, help="learning rate")
 
-    # Parse the command-line arguments
+ 
     args = parser.parse_args()
 
-    # Call the main function with the specified batch size
+ 
     main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)
