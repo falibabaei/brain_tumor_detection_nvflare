@@ -1,0 +1,4 @@
+torch
+nvflare[PT]>=2.4.0
+pytorch_lightning
+
