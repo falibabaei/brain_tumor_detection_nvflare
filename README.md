@@ -24,7 +24,21 @@ The dataset used is from Kaggle: [Brain Tumor Dataset](https://www.kaggle.com/da
 
 ### Copy the job template:
 
-1. After modifying the training script, place it into a job structure. Refer to the [NVFlare job structure documentation](https://nvflare.readthedocs.io/en/latest/real_world_fl/job.html) for details.
+1. After modifying the training script, place it into a job structure. Refer to the [NVFlare job structure documentation](https://nvflare.readthedocs.io/en/latest/real_world_fl/job.html) for details. There are some job templates ready to be used and modified. Execute the following command to view the available job templates:
+```
+nvflare job list_templates
+```
+We select `sag_pt`, which uses the scatter and gather algorithm and fedrated average for fedrared learning. to copy this job template, we need to cut out the following:
+
+```
+nvflare job create -force -j ./jobs/client_api -w sag_pt -sd ./code/     -f config_fed_client.conf app_script=brain_tumor_client.py.py
+
+```
+
+- `-j`: The directory in which the job template is to be created
+- `-w` : The job template that we want to copy from it
+- `-sd` : The directory contains the user-defined code for deep learning with nvflare
+- `f`: Force the replacement of some values in the client and server configuration files.
 
 2. **Example job structure:**
     ```
@@ -46,9 +60,10 @@ The dataset used is from Kaggle: [Brain Tumor Dataset](https://www.kaggle.com/da
 ### Run the simulator:
 
 ```bash
-nvflare simulator -n 2 -t 2 ./mx_job -w my_workspace
+nvflare simulator -n 2 -t 2 ./my_job -w my_workspace
 ```
-Results will be saved in my_workspace.
+`-n` shows the number of clients, `-t` number of parallel running clients, and `-w` WORKSPACE folder. 
+Results will be saved in `my_workspace`.
  
 ## Project Structure
 ```
