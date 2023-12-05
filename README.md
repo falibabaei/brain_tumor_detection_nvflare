@@ -14,9 +14,9 @@ The dataset used is from Kaggle: [Brain Tumor Dataset](https://www.kaggle.com/da
 
 ### Split the data between clients (sites):
 
-1. **Download the dataset from Kaggle: [Brain Tumor Dataset](https://www.kaggle.com/datasets/preetviradiya/brian-tumor-dataset).**
+1. Download the dataset from Kaggle: [Brain Tumor Dataset](https://www.kaggle.com/datasets/preetviradiya/brian-tumor-dataset).**
 
-2. **Run the data split script:**
+2. Run the data split script:**
     ```bash
     python3 data_split --data_path path/to/imgs --site_num n --site_name_prefix site --size_valid m --out_path path/to/output_dir --split_method uniform
     ```
