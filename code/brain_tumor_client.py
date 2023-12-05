@@ -9,8 +9,9 @@ import json
 
 import load_data
 from net import TumorNet
+import argparse 
 
-epochs = 1
+ 
 
 PATH = "./tumor_classification.pth"
 data_split_filename = "/home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/data_split.json"
@@ -19,7 +20,7 @@ with open(data_split_filename, "r") as file:
     data_split = json.load(file)
 
 
-def main():
+def main(batch_sz, epochs, lr):
     image_transform = transforms.Compose(
         [
             transforms.Resize(size=(256, 256)),
@@ -30,7 +31,7 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
-    epochs = 2
+   
     net = TumorNet()
 
     # (2) initializes NVFlare client API
@@ -43,7 +44,7 @@ def main():
             train_dataloader,
             valid_data,
             valid_dataloader,
-        ) = load_data.load_data(data_split, client_id, image_transform)
+        ) = load_data.load_data(data_split, client_id, image_transform, batch_sz)
         image_datasets = {"train": train_data, "test": valid_data}
         image_dataloaders = {
             "train": train_dataloader,
@@ -59,7 +60,7 @@ def main():
         net.load_state_dict(input_model.params)
 
         loss_func = nn.BCELoss()
-        optimizer = optim.Adam(net.parameters(), lr=0.01)
+        optimizer = optim.Adam(net.parameters(), lr=lr)
 
         # (optional) use GPU to speed things up
         net.to(device)
@@ -165,4 +166,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Your script description here")
+
+    # Add an argument for batch_sz
+    parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
+    parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
+    parser.add_argument("--lr", type=float, default=None, help="learning rate")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function with the specified batch size
+    main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)

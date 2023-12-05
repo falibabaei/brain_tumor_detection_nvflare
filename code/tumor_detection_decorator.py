@@ -1,10 +1,12 @@
+import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
-import json
-import nvflare.client as flare
 
+
+import nvflare.client as flare
+import json
 
 import load_data
 from net import TumorNet
@@ -24,7 +26,7 @@ with open(data_split_filename, "r") as file:
     data_split = json.load(file)
 
 
-def main():
+def main(batch_sz, epochs, lr):
     # (2) initializes NVFlare client API
     flare.init()
     client_id = flare.get_site_name()
@@ -33,7 +35,7 @@ def main():
         train_dataloader,
         valid_data,
         valid_dataloader,
-    ) = load_data.load_data(data_split, client_id, image_transform)
+    ) = load_data.load_data(data_split, client_id, image_transform, batch_sz)
     image_datasets = {"train": train_data, "test": valid_data}
     image_dataloaders = {
         "train": train_dataloader,
@@ -45,7 +47,7 @@ def main():
     # (3) decorates with flare.train and load model from the first argument
     # wraps training logic into a method
     @flare.train
-    def train_model(input_model=None, epochs=2, lr=0.001):
+    def train_model(input_model=None):
         """Return the trained model and train/test accuracy/loss"""
         # if not do_training:
         #    return None, None
@@ -116,7 +118,12 @@ def main():
 
         return output_model
 
-    def evaluate(input_weights):
+    # (5) decorates with flare.evaluate and load model from the first argument
+    @flare.evaluate
+    def fl_evaluate(input_model=None):
+        return evaluate(input_weights=input_model.params)
+
+    def evaluate(input_weights=None):
         """Return the trained model and train/test accuracy/loss"""
         # if not do_training:
         #    return None, None
@@ -135,33 +142,28 @@ def main():
                 )  # round up forward outcomes to get predicted labels
                 labels = labels.unsqueeze(1).type(torch.float)
 
-                running_corrects += torch.sum(
-                    pred_labels == labels.data
+                running_corrects += (
+                    (pred_labels == labels.data).sum().item()
                 )  # (pred_labels == labels.data).sum().item()
 
             # record loss and correct predicts of each epoch and stored in history
-            acc = running_corrects.double() / len(valid_dataloader)
+            acc = running_corrects / len(valid_dataloader)
 
         return 100 * acc
-
-    # (5) decorates with flare.evaluate and load model from the first argument
-    @flare.evaluate
-    def fl_evaluate(input_model=None):
-        return evaluate(input_weights=input_model.params)
 
     while flare.is_running():
         # (6) receives FLModel from NVFlare
         input_model = flare.receive()
         print(f"current_round={input_model.current_round}")
         # (7) call fl_evaluate method before training
-        #  to evaluate on the received/aggregated model
+        #       to evaluate on the received/aggregated model
         global_metric = fl_evaluate(input_model)
         print(
             f"Accuracy of the global model on the test images: {global_metric} %"
         )
 
         # call train method
-        train_model(input_model, epochs=2, lr=0.001)
+        train_model(input_model, epochs, lr)
         metric = evaluate(input_weights=torch.load(PATH))
         print(
             f"Accuracy of the trained model on the test images: {metric} %"
@@ -169,6 +171,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Your script description here")
+
+    # Add an argument for batch_sz
+    parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
+    parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
+    parser.add_argument("--lr", type=float, default=None, help="learning rate")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function with the specified batch size
+    main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)
 
 # nvflare simulator -n 2 -t 1 /home/se1131/nvflare_Leo/my_job

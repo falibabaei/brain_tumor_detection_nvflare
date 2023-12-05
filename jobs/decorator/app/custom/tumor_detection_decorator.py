@@ -1,3 +1,4 @@
+import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -25,7 +26,7 @@ with open(data_split_filename, "r") as file:
     data_split = json.load(file)
 
 
-def main():
+def main(batch_sz, epochs, lr):
     # (2) initializes NVFlare client API
     flare.init()
     client_id = flare.get_site_name()
@@ -34,7 +35,7 @@ def main():
         train_dataloader,
         valid_data,
         valid_dataloader,
-    ) = load_data.load_data(data_split, client_id, image_transform)
+    ) = load_data.load_data(data_split, client_id, image_transform, batch_sz)
     image_datasets = {"train": train_data, "test": valid_data}
     image_dataloaders = {
         "train": train_dataloader,
@@ -46,7 +47,7 @@ def main():
     # (3) decorates with flare.train and load model from the first argument
     # wraps training logic into a method
     @flare.train
-    def train_model(input_model=None, epochs=2, lr=0.001):
+    def train_model(input_model=None):
         """Return the trained model and train/test accuracy/loss"""
         # if not do_training:
         #    return None, None
@@ -162,7 +163,7 @@ def main():
         )
 
         # call train method
-        train_model(input_model, epochs=3, lr=0.001)
+        train_model(input_model, epochs, lr)
         metric = evaluate(input_weights=torch.load(PATH))
         print(
             f"Accuracy of the trained model on the test images: {metric} %"
@@ -170,6 +171,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Your script description here")
+
+    # Add an argument for batch_sz
+    parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
+    parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
+    parser.add_argument("--lr", type=float, default=None, help="learning rate")
+
+    # Parse the command-line arguments
+    args = parser.parse_args()
+
+    # Call the main function with the specified batch size
+    main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)
 
 # nvflare simulator -n 2 -t 1 /home/se1131/nvflare_Leo/my_job
