@@ -46,7 +46,9 @@ def create_dataset(
     return TumorImageDataset(dataset_df, img_dir, image_transform)
 
 
-def load_data(data_split: dict, client_id: str, image_transform,  batch_size: int):
+def load_data(
+    data_split: dict, client_id: str, image_transform, batch_size: int
+):
     """
     Load and prepare training and validation data from a data split file (json) for a specific client.
 
@@ -94,10 +96,10 @@ def load_data(data_split: dict, client_id: str, image_transform,  batch_size: in
     )
 
     train_dataloader = DataLoader(
-        train_data, batch_size= batch_size, shuffle=False
+        train_data, batch_size=batch_size, shuffle=False
     )
     valid_dataloader = DataLoader(
-        valid_data, batch_size= batch_size, shuffle=False
+        valid_data, batch_size=batch_size, shuffle=False
     )
 
     return train_data, train_dataloader, valid_data, valid_dataloader

@@ -9,9 +9,8 @@ import json
 
 import load_data
 from net import TumorNet
-import argparse 
+import argparse
 
- 
 
 PATH = "./tumor_classification.pth"
 data_split_filename = "/home/se1131/brain_scan/Brain_Tumor_DataSet/Brain_Tumor_DataSet/data_split.json"
@@ -31,7 +30,7 @@ def main(batch_sz, epochs, lr):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
-   
+
     net = TumorNet()
 
     # (2) initializes NVFlare client API
@@ -44,7 +43,9 @@ def main(batch_sz, epochs, lr):
             train_dataloader,
             valid_data,
             valid_dataloader,
-        ) = load_data.load_data(data_split, client_id, image_transform, batch_sz)
+        ) = load_data.load_data(
+            data_split, client_id, image_transform, batch_sz
+        )
         image_datasets = {"train": train_data, "test": valid_data}
         image_dataloaders = {
             "train": train_dataloader,
@@ -68,15 +69,17 @@ def main(batch_sz, epochs, lr):
         steps = epochs * len(train_dataloader)
         for phase in ["train", "test"]:
             if phase == "train":
-                        net.train()  # set model to training mode for training phase
+                net.train()  # set model to training mode for training phase
             else:
-                        net.eval()  # set model to evaluation mode for test phase
+                net.eval()  # set model to evaluation mode for test phase
 
-            running_loss = 0.0  # record the training/test loss for each epoch
+            running_loss = (
+                0.0  # record the training/test loss for each epoch
+            )
             running_corrects = 0  # record the number of correct predicts by the model for each epoch
 
             for features, labels in image_dataloaders[phase]:
-                        # send data to gpu if possible
+                # send data to gpu if possible
                 features = features.to(device)
                 labels = labels.to(device)
 
@@ -88,12 +91,12 @@ def main(batch_sz, epochs, lr):
                 with torch.set_grad_enabled(phase == "train"):
                     outcomes = net(features)
                     pred_labels = (
-                                outcomes.round()
-                            )  # round up forward outcomes to get predicted labels
+                        outcomes.round()
+                    )  # round up forward outcomes to get predicted labels
                     labels = labels.unsqueeze(1).type(torch.float)
                     loss = loss_func(
-                                outcomes, labels
-                            )  # calculate loss
+                        outcomes, labels
+                    )  # calculate loss
 
                     # backpropagation only for training phase
                     if phase == "train":
@@ -103,22 +106,21 @@ def main(batch_sz, epochs, lr):
                         # record loss and correct predicts of each bach
                 running_loss += loss.item() * features.size(0)
                 running_corrects += torch.sum(
-                            pred_labels == labels.data
-                        )
+                    pred_labels == labels.data
+                )
 
             # record loss and correct predicts of each epoch and stored in history
             epoch_loss = running_loss / len(image_datasets[phase])
             epoch_acc = running_corrects.double() / len(
-                        image_datasets[phase]
-                    )
+                image_datasets[phase]
+            )
 
             print(
-                        "{} Loss: {:.4f} Acc: {:.4f}".format(
-                            phase, epoch_loss, epoch_acc
-                        )
-                    )
+                "{} Loss: {:.4f} Acc: {:.4f}".format(
+                    phase, epoch_loss, epoch_acc
+                )
+            )
 
-         
         print("Finished Training")
 
         PATH = "./tumor_brain_net.pth"
@@ -166,15 +168,26 @@ def main(batch_sz, epochs, lr):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train a model for brain tumor detection using nvflare.")
+    parser = argparse.ArgumentParser(
+        description="Train a model for brain tumor detection using nvflare."
+    )
 
- 
-    parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
-    parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
-    parser.add_argument("--lr", type=float, default=None, help="learning rate")
+    parser.add_argument(
+        "--batch_sz",
+        type=int,
+        default=None,
+        help="Specify the batch size",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="number of epochs to train",
+    )
+    parser.add_argument(
+        "--lr", type=float, default=None, help="learning rate"
+    )
 
- 
     args = parser.parse_args()
 
- 
-    main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)
+    main(batch_sz=args.batch_sz, epochs=args.epochs, lr=args.lr)

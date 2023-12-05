@@ -35,7 +35,9 @@ def main(batch_sz, epochs, lr):
         train_dataloader,
         valid_data,
         valid_dataloader,
-    ) = load_data.load_data(data_split, client_id, image_transform, batch_sz)
+    ) = load_data.load_data(
+        data_split, client_id, image_transform, batch_sz
+    )
     image_datasets = {"train": train_data, "test": valid_data}
     image_dataloaders = {
         "train": train_dataloader,
@@ -171,17 +173,31 @@ def main(batch_sz, epochs, lr):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Your script description here")
+    parser = argparse.ArgumentParser(
+        description="Your script description here"
+    )
 
     # Add an argument for batch_sz
-    parser.add_argument("--batch_sz", type=int, default=None, help="Specify the batch size")
-    parser.add_argument("--epochs", type=int, default=None, help="number of epochs to train")
-    parser.add_argument("--lr", type=float, default=None, help="learning rate")
+    parser.add_argument(
+        "--batch_sz",
+        type=int,
+        default=None,
+        help="Specify the batch size",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="number of epochs to train",
+    )
+    parser.add_argument(
+        "--lr", type=float, default=None, help="learning rate"
+    )
 
     # Parse the command-line arguments
     args = parser.parse_args()
 
     # Call the main function with the specified batch size
-    main(batch_sz=args.batch_sz, epochs= args.epochs, lr=args.lr)
+    main(batch_sz=args.batch_sz, epochs=args.epochs, lr=args.lr)
 
 # nvflare simulator -n 2 -t 1 /home/se1131/nvflare_Leo/my_job
