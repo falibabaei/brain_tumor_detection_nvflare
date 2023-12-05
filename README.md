@@ -51,7 +51,7 @@ nvflare simulator -n 2 -t 2 ./mx_job -w my_workspace
 Results will be saved in my_workspace.
  
 ## Project Structure
-
+```
 ├── code
 │   ├── brain_tumor_client.py
 │   ├── data_split.py
@@ -90,4 +90,4 @@ Results will be saved in my_workspace.
 │       │       ├── net.py
 │       │       └── tumor_detection_decorator.py
 │       └── meta.conf
-
+ ```
